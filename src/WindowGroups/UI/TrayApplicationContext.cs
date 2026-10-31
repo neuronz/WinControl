@@ -1,0 +1,212 @@
+using System.Drawing;
+using System.Windows.Forms;
+using WindowGroups.Core.Configuration;
+using WindowGroups.Core.Interop;
+using WindowGroups.Core.Logging;
+using WindowGroups.Core.Models;
+using WindowGroups.Core.Services;
+
+namespace WindowGroups.UI;
+
+/// <summary>
+/// Hosts the system-tray icon and its context menu, and wires up global
+/// hotkeys. There is no main window.
+/// </summary>
+public sealed class TrayApplicationContext : ApplicationContext
+{
+    private readonly ConfigurationService _configurationService;
+    private readonly WindowManager _windowManager;
+    private readonly IStartupService _startupService;
+    private readonly ILogger _logger;
+    private readonly HotkeyManager _hotkeyManager;
+    private readonly HotkeyMessageWindow _messageWindow;
+    private readonly NotifyIcon _notifyIcon;
+    private readonly Icon _icon;
+
+    private AppConfiguration _configuration;
+
+    public TrayApplicationContext(
+        AppConfiguration configuration,
+        ConfigurationService configurationService,
+        WindowManager windowManager,
+        IHotkeyApi hotkeyApi,
+        IStartupService startupService,
+        ILogger logger)
+    {
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _configurationService = configurationService ?? throw new ArgumentNullException(nameof(configurationService));
+        _windowManager = windowManager ?? throw new ArgumentNullException(nameof(windowManager));
+        _startupService = startupService ?? throw new ArgumentNullException(nameof(startupService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        _hotkeyManager = new HotkeyManager(hotkeyApi ?? throw new ArgumentNullException(nameof(hotkeyApi)), logger);
+
+        _icon = LoadIcon();
+        _notifyIcon = new NotifyIcon
+        {
+            Icon = _icon,
+            Text = "Window Groups",
+            Visible = true
+        };
+        _notifyIcon.DoubleClick += (_, _) => ShowSettings();
+
+        _messageWindow = new HotkeyMessageWindow(_hotkeyManager);
+        _ = _messageWindow.Handle; // Force creation of the underlying window.
+
+        RebuildMenu();
+        RegisterHotkeys();
+    }
+
+    protected override void ExitThreadCore()
+    {
+        _hotkeyManager.Dispose();
+        _messageWindow.Dispose();
+        _notifyIcon.Visible = false;
+        _notifyIcon.Dispose();
+        _icon.Dispose();
+        base.ExitThreadCore();
+    }
+
+    private void RebuildMenu()
+    {
+        var menu = new ContextMenuStrip();
+        menu.Items.AddRange(new ToolStripItem[]
+        {
+            BuildGroupSubmenu("Minimize Groups", minimize: true),
+            BuildGroupSubmenu("Restore Groups", minimize: false),
+            new ToolStripSeparator(),
+            new ToolStripMenuItem("Settings", null, (_, _) => ShowSettings()),
+            new ToolStripMenuItem("Exit", null, (_, _) => ExitThread())
+        });
+
+        var previous = _notifyIcon.ContextMenuStrip;
+        _notifyIcon.ContextMenuStrip = menu;
+        previous?.Dispose();
+    }
+
+    private ToolStripMenuItem BuildGroupSubmenu(string title, bool minimize)
+    {
+        var submenu = new ToolStripMenuItem(title);
+
+        foreach (var group in _configuration.Groups)
+        {
+            var captured = group;
+            var item = new ToolStripMenuItem(group.Name)
+            {
+                Enabled = group.Enabled,
+                ToolTipText = BuildGroupTooltip(group)
+            };
+            item.Click += (_, _) => RunGroupAction(captured, minimize);
+            submenu.DropDownItems.Add(item);
+        }
+
+        if (submenu.DropDownItems.Count == 0)
+        {
+            submenu.DropDownItems.Add(new ToolStripMenuItem("(no groups)") { Enabled = false });
+        }
+
+        return submenu;
+    }
+
+    private static string BuildGroupTooltip(ApplicationGroup group)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(group.Description))
+        {
+            parts.Add(group.Description);
+        }
+
+        if (group.Hotkey is not null)
+        {
+            parts.Add("Shortcut: " + group.Hotkey);
+        }
+
+        return string.Join(Environment.NewLine, parts);
+    }
+
+    private void RunGroupAction(ApplicationGroup group, bool minimize)
+    {
+        try
+        {
+            if (minimize)
+            {
+                _windowManager.MinimizeGroup(group);
+            }
+            else
+            {
+                _windowManager.RestoreGroup(group);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Group action failed for '{group.Name}'.", ex);
+        }
+    }
+
+    private void RegisterHotkeys()
+    {
+        _hotkeyManager.UnregisterAll();
+
+        foreach (var group in _configuration.Groups)
+        {
+            if (!group.Enabled || group.Hotkey is null)
+            {
+                continue;
+            }
+
+            var captured = group;
+            try
+            {
+                _hotkeyManager.Register(
+                    _messageWindow.Handle,
+                    captured.Hotkey,
+                    () => RunGroupAction(captured, minimize: true));
+            }
+            catch (HotkeyConflictException ex)
+            {
+                _logger.Warning(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to register hotkey for group '{group.Name}'.", ex);
+            }
+        }
+    }
+
+    private void ShowSettings()
+    {
+        using var form = new SettingsForm(_configuration, _startupService.IsEnabled());
+        if (form.ShowDialog() != DialogResult.OK || form.UpdatedConfiguration is null)
+        {
+            return;
+        }
+
+        _configuration = form.UpdatedConfiguration;
+
+        try
+        {
+            _configurationService.Save(_configuration);
+            _startupService.SetEnabled(form.StartWithWindows);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("Failed to save settings.", ex);
+            MessageBox.Show(
+                "Failed to save settings:\n\n" + ex.Message,
+                "Window Groups",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+
+        RebuildMenu();
+        RegisterHotkeys();
+    }
+
+    private static Icon LoadIcon()
+    {
+        using var stream = typeof(TrayApplicationContext).Assembly
+            .GetManifestResourceStream("WindowGroups.app_icon.ico");
+
+        return stream is null ? SystemIcons.Application : new Icon(stream);
+    }
+}

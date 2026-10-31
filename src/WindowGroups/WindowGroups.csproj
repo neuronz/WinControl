@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>WindowGroups</RootNamespace>
+    <AssemblyName>WindowGroups</AssemblyName>
+    <ApplicationIcon>app_icon.ico</ApplicationIcon>
+    <!-- We build our own icon into the executable; keep resource items explicit -->
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="app_icon.ico" LogicalName="WindowGroups.app_icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WindowGroups.Core\WindowGroups.Core.csproj" />
+  </ItemGroup>
+
+</Project>

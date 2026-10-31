@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+
+# User configuration / logs (runtime data)
+*.user
+*.suo
+
+# Generated icon cache
+*.cache
+
+# IDE
+.vs/
+.idea/
