@@ -16,9 +16,10 @@ public sealed class ConfigurationServiceTests
             var service = new ConfigurationService(path, NullLogger.Instance);
             var config = service.Load();
 
-            Assert.Equal(2, config.Groups.Count);
+            Assert.Equal(3, config.Groups.Count);
             Assert.Contains(config.Groups, g => g.Name == "Browsers");
             Assert.Contains(config.Groups, g => g.Name == "Consoles / Terminals");
+            Assert.Contains(config.Groups, g => g.Name == "Microsoft Word");
         }
         finally
         {
@@ -77,7 +78,7 @@ public sealed class ConfigurationServiceTests
             var service = new ConfigurationService(path, NullLogger.Instance);
             var config = service.Load();
 
-            Assert.Equal(2, config.Groups.Count);
+            Assert.Equal(3, config.Groups.Count);
         }
         finally
         {
@@ -123,7 +124,7 @@ public sealed class ConfigurationServiceTests
     {
         var service = new ConfigurationService(TestPath.New(), NullLogger.Instance);
         var result = service.Validate(null);
-        Assert.Equal(2, result.Groups.Count);
+        Assert.Equal(3, result.Groups.Count);
     }
 }
 

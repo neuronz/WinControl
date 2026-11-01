@@ -5,4 +5,5 @@ public static class WellKnownGroupIds
 {
     public const string Browsers = "browsers-default";
     public const string Consoles = "consoles-terminal-default";
+    public const string Word = "word-default";
 }

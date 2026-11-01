@@ -39,5 +39,10 @@ public sealed class ApplicationGroupTests
         var consoles = DefaultGroups.CreateConsoles();
         Assert.Equal(new[] { "WindowsTerminal", "cmd", "powershell", "pwsh" }, consoles.ExecutableNames);
         Assert.Equal("Ctrl+Alt+C", consoles.Hotkey!.ToString());
+
+        var word = DefaultGroups.CreateWord();
+        Assert.Equal(new[] { "WINWORD" }, word.ExecutableNames);
+        Assert.Equal("Ctrl+Alt+W", word.Hotkey!.ToString());
+        Assert.True(word.Enabled);
     }
 }

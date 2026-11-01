@@ -2,7 +2,7 @@ using WindowGroups.Core.Models;
 
 namespace WindowGroups.Core.Configuration;
 
-/// <summary>Factory methods for the built-in "Browsers" and "Consoles / Terminals" groups.</summary>
+/// <summary>Factory methods for the built-in groups.</summary>
 public static class DefaultGroups
 {
     public static ApplicationGroup CreateBrowsers() => new()
@@ -25,7 +25,22 @@ public static class DefaultGroups
         ExecutableNames = new List<string> { "WindowsTerminal", "cmd", "powershell", "pwsh" }
     };
 
-    public static List<ApplicationGroup> CreateDefaultGroups() => new() { CreateBrowsers(), CreateConsoles() };
+    public static ApplicationGroup CreateWord() => new()
+    {
+        Id = WellKnownGroupIds.Word,
+        Name = "Microsoft Word",
+        Description = "Word document windows",
+        Enabled = true,
+        Hotkey = new Hotkey(HotkeyModifiers.Control | HotkeyModifiers.Alt, 0x57), // Ctrl + Alt + W
+        ExecutableNames = new List<string> { "WINWORD" }
+    };
+
+    public static List<ApplicationGroup> CreateDefaultGroups() => new()
+    {
+        CreateBrowsers(),
+        CreateConsoles(),
+        CreateWord()
+    };
 
     public static AppConfiguration CreateDefaultConfiguration() => new()
     {
