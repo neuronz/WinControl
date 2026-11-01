@@ -5,7 +5,9 @@ public enum CommandKind
     ShowSettings,
     Exit,
     MinimizeGroup,
-    RestoreGroup
+    RestoreGroup,
+    MinimizeAll,
+    RestoreAll
 }
 
 /// <summary>

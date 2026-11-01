@@ -255,6 +255,14 @@ public sealed class TrayApplicationContext : ApplicationContext
                 ExitThread();
                 break;
 
+            case CommandKind.MinimizeAll:
+                RunAllAction(minimize: true);
+                break;
+
+            case CommandKind.RestoreAll:
+                RunAllAction(minimize: false);
+                break;
+
             case CommandKind.MinimizeGroup:
             case CommandKind.RestoreGroup:
                 var group = FindGroup(command.GroupId);

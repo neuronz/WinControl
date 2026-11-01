@@ -152,8 +152,8 @@ administrator privileges. Alternatively, place a shortcut to
 ## Taskbar jump list & command line
 
 While running, Window Groups registers a jump list on its taskbar icon, so
-right-clicking the pinned icon offers **Minimize**/**Restore** for each enabled
-group plus **Settings** and **Exit**.
+right-clicking the pinned icon offers **Minimize All** / **Restore All**,
+per-group **Minimize**/**Restore**, plus **Settings** and **Exit**.
 
 These entries launch the app with a command-line switch that is forwarded to the
 already-running instance over a local named event (so no duplicate process or
@@ -162,6 +162,8 @@ tray icon is created):
 ```
 WindowGroups.exe --minimize <group-id-or-name>
 WindowGroups.exe --restore <group-id-or-name>
+WindowGroups.exe --minimize-all
+WindowGroups.exe --restore-all
 WindowGroups.exe --settings
 WindowGroups.exe --exit
 ```

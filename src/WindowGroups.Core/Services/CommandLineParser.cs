@@ -20,6 +20,10 @@ public static class CommandLineParser
                 return Build(CommandKind.MinimizeGroup, args);
             case "--restore":
                 return Build(CommandKind.RestoreGroup, args);
+            case "--minimize-all":
+                return new CommandRequest(CommandKind.MinimizeAll, null);
+            case "--restore-all":
+                return new CommandRequest(CommandKind.RestoreAll, null);
             default:
                 return null;
         }

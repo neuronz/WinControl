@@ -46,6 +46,9 @@ internal static class TaskbarService
                 ShowFrequentCategory = false
             };
 
+            jumpList.JumpItems.Add(BuildTask("Minimize All", "--minimize-all", launchPath, workingDirectory));
+            jumpList.JumpItems.Add(BuildTask("Restore All", "--restore-all", launchPath, workingDirectory));
+
             foreach (var group in configuration.Groups.Where(g => g.Enabled))
             {
                 jumpList.JumpItems.Add(BuildTask($"Minimize {group.Name}", "--minimize " + group.Id, launchPath, workingDirectory));

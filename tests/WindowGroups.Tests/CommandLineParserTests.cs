@@ -67,4 +67,17 @@ public sealed class CommandLineParserTests
     {
         Assert.Null(CommandLineParser.Parse(new[] { "--bogus" }));
     }
+
+    [Theory]
+    [InlineData("--minimize-all", CommandKind.MinimizeAll)]
+    [InlineData("--restore-all", CommandKind.RestoreAll)]
+    [InlineData("--MINIMIZE-ALL", CommandKind.MinimizeAll)]
+    public void Parse_AllCommands_ReturnExpectedKind(string arg, CommandKind expected)
+    {
+        var result = CommandLineParser.Parse(new[] { arg });
+
+        Assert.NotNull(result);
+        Assert.Equal(expected, result!.Kind);
+        Assert.Null(result.GroupId);
+    }
 }
