@@ -51,8 +51,9 @@ internal static class TaskbarService
 
             foreach (var group in configuration.Groups.Where(g => g.Enabled))
             {
-                jumpList.JumpItems.Add(BuildTask($"Minimize {group.Name}", "--minimize " + group.Id, launchPath, workingDirectory));
-                jumpList.JumpItems.Add(BuildTask($"Restore {group.Name}", "--restore " + group.Id, launchPath, workingDirectory));
+                var label = GroupDisplay.WithShortcut(group.Name, group.Hotkey);
+                jumpList.JumpItems.Add(BuildTask($"Minimize {label}", "--minimize " + group.Id, launchPath, workingDirectory));
+                jumpList.JumpItems.Add(BuildTask($"Restore {label}", "--restore " + group.Id, launchPath, workingDirectory));
             }
 
             jumpList.JumpItems.Add(BuildTask("Settings", "--settings", launchPath, workingDirectory));

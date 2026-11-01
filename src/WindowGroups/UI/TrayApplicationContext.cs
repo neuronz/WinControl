@@ -98,7 +98,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         foreach (var group in _configuration.Groups)
         {
             var captured = group;
-            var item = new ToolStripMenuItem(group.Name)
+            var item = new ToolStripMenuItem(GroupDisplay.WithShortcut(group.Name, group.Hotkey))
             {
                 Enabled = group.Enabled,
                 ToolTipText = BuildGroupTooltip(group)
@@ -131,18 +131,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
     private static string BuildGroupTooltip(ApplicationGroup group)
     {
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(group.Description))
-        {
-            parts.Add(group.Description);
-        }
-
-        if (group.Hotkey is not null)
-        {
-            parts.Add("Shortcut: " + group.Hotkey);
-        }
-
-        return string.Join(Environment.NewLine, parts);
+        return string.IsNullOrWhiteSpace(group.Description) ? string.Empty : group.Description;
     }
 
     private void RunGroupAction(ApplicationGroup group, bool minimize)
