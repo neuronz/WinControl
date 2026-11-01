@@ -55,6 +55,7 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         RebuildMenu();
         RegisterHotkeys();
+        TaskbarService.UpdateJumpList(_configuration, _logger);
     }
 
     protected override void ExitThreadCore()
@@ -200,6 +201,62 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         RebuildMenu();
         RegisterHotkeys();
+        TaskbarService.UpdateJumpList(_configuration, _logger);
+    }
+
+    /// <summary>
+    /// Queues a command (for example, from a second instance or jump-list task)
+    /// onto the UI thread. Safe to call from any thread.
+    /// </summary>
+    public void PostCommand(CommandRequest command)
+    {
+        try
+        {
+            if (_messageWindow.IsHandleCreated)
+            {
+                _messageWindow.BeginInvoke(() => ExecuteCommand(command));
+            }
+        }
+        catch
+        {
+            // Ignore commands that race application shutdown.
+        }
+    }
+
+    private void ExecuteCommand(CommandRequest command)
+    {
+        switch (command.Kind)
+        {
+            case CommandKind.ShowSettings:
+                ShowSettings();
+                break;
+
+            case CommandKind.Exit:
+                ExitThread();
+                break;
+
+            case CommandKind.MinimizeGroup:
+            case CommandKind.RestoreGroup:
+                var group = FindGroup(command.GroupId);
+                if (group is not null)
+                {
+                    RunGroupAction(group, command.Kind == CommandKind.MinimizeGroup);
+                }
+
+                break;
+        }
+    }
+
+    private ApplicationGroup? FindGroup(string? idOrName)
+    {
+        if (string.IsNullOrWhiteSpace(idOrName))
+        {
+            return null;
+        }
+
+        return _configuration.Groups.FirstOrDefault(g =>
+            string.Equals(g.Id, idOrName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(g.Name, idOrName, StringComparison.OrdinalIgnoreCase));
     }
 
     private static Icon LoadIcon()

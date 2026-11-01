@@ -22,6 +22,10 @@ windows) with one click or a global keyboard shortcut.
 - Optional "Start with Windows".
 - JSON configuration under `%LOCALAPPDATA%\WindowGroups\`.
 - Restoring only affects windows actually minimised by Window Groups.
+- Single instance: launching it again while it is already running simply opens
+  the running instance's Settings window.
+- Taskbar jump list: right-clicking the pinned taskbar icon gives quick access to
+  Minimize/Restore for every group, plus Settings and Exit.
 
 ## Requirements
 
@@ -143,6 +147,30 @@ The value points at the application executable (quoted path). This requires no
 administrator privileges. Alternatively, place a shortcut to
 `WindowGroups.exe` in the Startup folder
 (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`).
+
+## Taskbar jump list & command line
+
+While running, Window Groups registers a jump list on its taskbar icon, so
+right-clicking the pinned icon offers **Minimize**/**Restore** for each enabled
+group plus **Settings** and **Exit**.
+
+These entries launch the app with a command-line switch that is forwarded to the
+already-running instance over a local named event (so no duplicate process or
+tray icon is created):
+
+```
+WindowGroups.exe --minimize <group-id-or-name>
+WindowGroups.exe --restore <group-id-or-name>
+WindowGroups.exe --settings
+WindowGroups.exe --exit
+```
+
+Launching with no arguments while the app is already running opens its Settings
+window.
+
+> Note: the jump list is keyed to the app's AppUserModelID. If you pinned the
+> icon before this build, unpin it and pin it again so the jump list attaches to
+> the taskbar icon.
 
 ## Project structure
 
