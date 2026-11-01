@@ -57,18 +57,60 @@ public sealed class WindowManager
         return new MinimizeResult(group.Id, minimized);
     }
 
+    /// <summary>Minimises the union of all enabled groups, recording handles per group.</summary>
+    public MinimizeResult MinimizeAll(IReadOnlyCollection<ApplicationGroup> groups)
+    {
+        if (groups is null) throw new ArgumentNullException(nameof(groups));
+
+        var total = 0;
+        foreach (var group in groups)
+        {
+            if (group is null || !group.Enabled)
+            {
+                continue;
+            }
+
+            total += MinimizeGroup(group).MinimizedCount;
+        }
+
+        return new MinimizeResult(string.Empty, total);
+    }
+
     public RestoreResult RestoreGroup(ApplicationGroup group)
     {
         if (group is null) throw new ArgumentNullException(nameof(group));
         if (!group.Enabled) return new RestoreResult(group.Id, 0);
 
+        return new RestoreResult(group.Id, RestoreHandles(group.Id));
+    }
+
+    /// <summary>Restores every window previously minimised by this application.</summary>
+    public RestoreResult RestoreAll()
+    {
+        string[] groupIds;
+        lock (_sync)
+        {
+            groupIds = _minimized.Keys.ToArray();
+        }
+
+        var total = 0;
+        foreach (var groupId in groupIds)
+        {
+            total += RestoreHandles(groupId);
+        }
+
+        return new RestoreResult(string.Empty, total);
+    }
+
+    private int RestoreHandles(string groupId)
+    {
         var restored = 0;
 
         lock (_sync)
         {
-            if (!_minimized.TryGetValue(group.Id, out var handles))
+            if (!_minimized.TryGetValue(groupId, out var handles))
             {
-                return new RestoreResult(group.Id, 0);
+                return restored;
             }
 
             foreach (var handle in handles.ToArray())
@@ -93,11 +135,11 @@ public sealed class WindowManager
 
             if (handles.Count == 0)
             {
-                _minimized.Remove(group.Id);
+                _minimized.Remove(groupId);
             }
         }
 
-        return new RestoreResult(group.Id, restored);
+        return restored;
     }
 
     /// <summary>Snapshot of the handles recorded as minimised for a group. Primarily for testing.</summary>

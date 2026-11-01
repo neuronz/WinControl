@@ -84,7 +84,8 @@ bundles the runtime.
 ## Usage
 
 1. Right-click the tray icon to open the menu.
-2. **Minimize Groups** / **Restore Groups** lists the configured groups.
+2. **Minimize Groups** / **Restore Groups** lists each configured group, plus a
+   **Minimize All** / **Restore All** action at the top of each menu.
 3. **Settings** opens the settings dialog where you can:
    - Rename groups, edit descriptions, toggle enable/disable.
    - Add/remove executable names (without the `.exe` extension).

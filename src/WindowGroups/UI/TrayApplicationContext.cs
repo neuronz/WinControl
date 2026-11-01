@@ -89,6 +89,12 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         var submenu = new ToolStripMenuItem(title);
 
+        submenu.DropDownItems.Add(new ToolStripMenuItem(
+            minimize ? "Minimize All" : "Restore All",
+            null,
+            (_, _) => RunAllAction(minimize)));
+        submenu.DropDownItems.Add(new ToolStripSeparator());
+
         foreach (var group in _configuration.Groups)
         {
             var captured = group;
@@ -101,12 +107,26 @@ public sealed class TrayApplicationContext : ApplicationContext
             submenu.DropDownItems.Add(item);
         }
 
-        if (submenu.DropDownItems.Count == 0)
-        {
-            submenu.DropDownItems.Add(new ToolStripMenuItem("(no groups)") { Enabled = false });
-        }
-
         return submenu;
+    }
+
+    private void RunAllAction(bool minimize)
+    {
+        try
+        {
+            if (minimize)
+            {
+                _windowManager.MinimizeAll(_configuration.Groups);
+            }
+            else
+            {
+                _windowManager.RestoreAll();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(minimize ? "Minimize All failed." : "Restore All failed.", ex);
+        }
     }
 
     private static string BuildGroupTooltip(ApplicationGroup group)
