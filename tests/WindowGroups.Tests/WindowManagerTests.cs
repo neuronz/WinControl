@@ -179,4 +179,49 @@ public sealed class WindowManagerTests
         Assert.Equal(1, result.RestoredCount);
         Assert.Contains(api.Restored, h => h == 1);
     }
+
+    [Fact]
+    public void ToggleGroup_MinimizesWhenNothingIsMinimized()
+    {
+        var (manager, api) = Create();
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
+
+        var result = manager.ToggleGroup(Browsers());
+
+        Assert.True(result.Minimized);
+        Assert.Equal(1, result.Count);
+        Assert.Contains(api.Minimized, h => h == 1);
+        Assert.Empty(api.Restored);
+    }
+
+    [Fact]
+    public void ToggleGroup_RestoresWhenAlreadyMinimized()
+    {
+        var (manager, api) = Create();
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1, Iconic = true });
+
+        var result = manager.ToggleGroup(Browsers());
+
+        Assert.False(result.Minimized);
+        Assert.Equal(1, result.Count);
+        Assert.Contains(api.Restored, h => h == 1);
+        Assert.Empty(api.Minimized);
+    }
+
+    [Fact]
+    public void ToggleGroup_DoesNothing_ForDisabledGroup()
+    {
+        var (manager, api) = Create();
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
+
+        var group = Browsers();
+        group.Enabled = false;
+
+        var result = manager.ToggleGroup(group);
+
+        Assert.False(result.Minimized);
+        Assert.Equal(0, result.Count);
+        Assert.Empty(api.Minimized);
+        Assert.Empty(api.Restored);
+    }
 }

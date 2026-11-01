@@ -98,6 +98,33 @@ public sealed class WindowManager
         return new RestoreResult(string.Empty, RestoreMatches(executableNames));
     }
 
+    /// <summary>
+    /// Toggles a group: if any of its windows are currently minimised they are
+    /// restored, otherwise its visible windows are minimised.
+    /// </summary>
+    public ToggleResult ToggleGroup(ApplicationGroup group)
+    {
+        if (group is null) throw new ArgumentNullException(nameof(group));
+        if (!group.Enabled) return new ToggleResult(group.Id, Minimized: false, Count: 0);
+
+        var anyMinimized = false;
+        foreach (var window in _enumerator.EnumerateMatching(group.ExecutableNames, userFacingOnly: false))
+        {
+            if (_windowApi.IsIconic(window.Handle))
+            {
+                anyMinimized = true;
+                break;
+            }
+        }
+
+        if (anyMinimized)
+        {
+            return new ToggleResult(group.Id, Minimized: false, Count: RestoreMatches(group.ExecutableNames));
+        }
+
+        return new ToggleResult(group.Id, Minimized: true, Count: MinimizeGroup(group).MinimizedCount);
+    }
+
     private int RestoreMatches(IReadOnlyCollection<string> executableNames)
     {
         var restored = 0;

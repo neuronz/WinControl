@@ -18,8 +18,9 @@ windows) with one click or a global keyboard shortcut.
   - **Consoles / Terminals** — `WindowsTerminal`, `cmd`, `powershell`, `pwsh`
   - **Microsoft Word** — `WINWORD`
 - Create, edit, enable/disable and delete your own groups.
-- Configurable global hotkeys (defaults: `Ctrl+Alt+B` = minimise Browsers,
-  `Ctrl+Alt+C` = minimise Consoles / Terminals).
+- Configurable global hotkeys that toggle a group — minimise its windows when
+  visible and restore them when minimised (defaults: `Ctrl+Alt+B` = Browsers,
+  `Ctrl+Alt+C` = Consoles / Terminals, `Ctrl+Alt+W` = Microsoft Word).
 - Optional "Start with Windows".
 - JSON configuration under `%LOCALAPPDATA%\WindowGroups\`.
 - Restoring returns every currently minimised window that matches a group.

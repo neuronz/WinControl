@@ -153,6 +153,18 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
     }
 
+    private void RunToggleAction(ApplicationGroup group)
+    {
+        try
+        {
+            _windowManager.ToggleGroup(group);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Toggle action failed for '{group.Name}'.", ex);
+        }
+    }
+
     private void RegisterHotkeys()
     {
         _hotkeyManager.UnregisterAll();
@@ -170,7 +182,7 @@ public sealed class TrayApplicationContext : ApplicationContext
                 _hotkeyManager.Register(
                     _messageWindow.Handle,
                     captured.Hotkey,
-                    () => RunGroupAction(captured, minimize: true));
+                    () => RunToggleAction(captured));
             }
             catch (HotkeyConflictException ex)
             {
