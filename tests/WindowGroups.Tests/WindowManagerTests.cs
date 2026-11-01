@@ -27,18 +27,18 @@ public sealed class WindowManagerTests
     };
 
     [Fact]
-    public void MinimizeGroup_MinimizesAndRecordsVisibleNonIconicWindows()
+    public void MinimizeGroup_MinimizesVisibleNonIconicWindows()
     {
         var (manager, api) = Create();
         api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
-        api.Windows.Add(new FakeWindow { Handle = 2, ProcessId = 1, Iconic = true }); // already minimized
+        api.Windows.Add(new FakeWindow { Handle = 2, ProcessId = 1, Iconic = true });
         api.Windows.Add(new FakeWindow { Handle = 3, ProcessId = 1, Visible = false });
 
         var result = manager.MinimizeGroup(Browsers());
 
         Assert.Equal(1, result.MinimizedCount);
+        Assert.Single(api.Minimized);
         Assert.Contains(api.Minimized, h => h == 1);
-        Assert.Contains(manager.GetMinimizedHandles("browsers"), h => h == 1);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public sealed class WindowManagerTests
         var result = manager.MinimizeGroup(Browsers());
 
         Assert.Equal(2, result.MinimizedCount);
-        Assert.Equal(2, manager.GetMinimizedHandles("browsers").Count);
+        Assert.Equal(2, api.Minimized.Count);
     }
 
     [Fact]
@@ -70,55 +70,37 @@ public sealed class WindowManagerTests
     }
 
     [Fact]
-    public void RestoreGroup_RestoresOnlyPreviouslyMinimizedWindows()
+    public void RestoreGroup_RestoresEveryMinimizedMatchingWindow()
     {
         var (manager, api) = Create();
-        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1, Iconic = true });
         api.Windows.Add(new FakeWindow { Handle = 2, ProcessId = 1 });
 
-        manager.MinimizeGroup(Browsers());
         var result = manager.RestoreGroup(Browsers());
 
-        Assert.Equal(2, result.RestoredCount);
+        Assert.Equal(1, result.RestoredCount);
         Assert.Contains(api.Restored, h => h == 1);
-        Assert.Contains(api.Restored, h => h == 2);
-        Assert.Empty(manager.GetMinimizedHandles("browsers"));
-    }
-
-    [Fact]
-    public void RestoreGroup_DoesNotRestoreWindowsItDidNotMinimize()
-    {
-        var (manager, api) = Create();
-        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
-
-        var result = manager.RestoreGroup(Browsers());
-
-        Assert.Equal(0, result.RestoredCount);
-        Assert.Empty(api.Restored);
+        Assert.DoesNotContain(api.Restored, h => h == 2);
     }
 
     [Fact]
     public void RestoreGroup_SkipsDestroyedWindowHandles()
     {
         var (manager, api) = Create();
-        var window = new FakeWindow { Handle = 1, ProcessId = 1 };
-        api.Windows.Add(window);
-
-        manager.MinimizeGroup(Browsers());
-        window.Destroyed = true; // Window closed before restore.
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1, Iconic = true, Destroyed = true });
+        api.Windows.Add(new FakeWindow { Handle = 2, ProcessId = 1, Iconic = true });
 
         var result = manager.RestoreGroup(Browsers());
 
-        Assert.Equal(0, result.RestoredCount);
-        Assert.Empty(manager.GetMinimizedHandles("browsers"));
+        Assert.Equal(1, result.RestoredCount);
+        Assert.Contains(api.Restored, h => h == 2);
     }
 
     [Fact]
     public void RestoreGroup_DoesNothing_ForDisabledGroup()
     {
         var (manager, api) = Create();
-        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
-        manager.MinimizeGroup(Browsers());
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1, Iconic = true });
 
         var group = Browsers();
         group.Enabled = false;
@@ -126,7 +108,7 @@ public sealed class WindowManagerTests
         var result = manager.RestoreGroup(group);
 
         Assert.Equal(0, result.RestoredCount);
-        Assert.Single(manager.GetMinimizedHandles("browsers"));
+        Assert.Empty(api.Restored);
     }
 
     [Fact]
@@ -149,39 +131,40 @@ public sealed class WindowManagerTests
         var result = manager.MinimizeAll(new List<ApplicationGroup> { browsers, word, disabled });
 
         Assert.Equal(2, result.MinimizedCount);
-        Assert.Single(manager.GetMinimizedHandles("b"));
-        Assert.Single(manager.GetMinimizedHandles("w"));
-        Assert.Empty(manager.GetMinimizedHandles("d"));
+        Assert.Equal(2, api.Minimized.Count);
     }
 
     [Fact]
-    public void RestoreAll_RestoresEverythingRecordedAcrossGroups()
+    public void RestoreAll_RestoresEveryMinimizedMatchingWindowAcrossGroups()
     {
         var api = new FakeWindowApi();
         var resolver = new FakeProcessNameResolver();
         resolver.Add(1, "chrome");
         resolver.Add(2, "winword");
+        resolver.Add(3, "notepad");
         var enumerator = new ProcessWindowEnumerator(api, resolver, -1, NullLogger.Instance);
         var manager = new WindowManager(api, enumerator, NullLogger.Instance);
 
-        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
-        api.Windows.Add(new FakeWindow { Handle = 2, ProcessId = 2 });
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1, Iconic = true });
+        api.Windows.Add(new FakeWindow { Handle = 2, ProcessId = 2, Iconic = true });
+        api.Windows.Add(new FakeWindow { Handle = 3, ProcessId = 3, Iconic = true });
+        api.Windows.Add(new FakeWindow { Handle = 4, ProcessId = 1 });
 
         var browsers = new ApplicationGroup { Id = "b", Name = "Browsers", Enabled = true, ExecutableNames = { "chrome" } };
         var word = new ApplicationGroup { Id = "w", Name = "Word", Enabled = true, ExecutableNames = { "winword" } };
+        var disabled = new ApplicationGroup { Id = "d", Name = "Disabled", Enabled = false, ExecutableNames = { "notepad" } };
 
-        manager.MinimizeGroup(browsers);
-        manager.MinimizeGroup(word);
+        var result = manager.RestoreAll(new List<ApplicationGroup> { browsers, word, disabled });
 
-        var result = manager.RestoreAll();
-
-        Assert.Equal(2, result.RestoredCount);
-        Assert.Empty(manager.GetMinimizedHandles("b"));
-        Assert.Empty(manager.GetMinimizedHandles("w"));
+        Assert.Equal(3, result.RestoredCount);
+        Assert.Contains(api.Restored, h => h == 1);
+        Assert.Contains(api.Restored, h => h == 2);
+        Assert.Contains(api.Restored, h => h == 3);
+        Assert.DoesNotContain(api.Restored, h => h == 4);
     }
 
     [Fact]
-    public void RestoreAll_RestoresWindowsOfNowDisabledGroups()
+    public void RestoreAll_RestoresCloakedMinimizedWindows()
     {
         var api = new FakeWindowApi();
         var resolver = new FakeProcessNameResolver();
@@ -189,13 +172,9 @@ public sealed class WindowManagerTests
         var enumerator = new ProcessWindowEnumerator(api, resolver, -1, NullLogger.Instance);
         var manager = new WindowManager(api, enumerator, NullLogger.Instance);
 
-        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1 });
-        var group = new ApplicationGroup { Id = "b", Name = "Browsers", Enabled = true, ExecutableNames = { "chrome" } };
+        api.Windows.Add(new FakeWindow { Handle = 1, ProcessId = 1, Iconic = true, Cloaked = true });
 
-        manager.MinimizeGroup(group);
-        group.Enabled = false;
-
-        var result = manager.RestoreAll();
+        var result = manager.RestoreAll(new List<ApplicationGroup> { Browsers() });
 
         Assert.Equal(1, result.RestoredCount);
         Assert.Contains(api.Restored, h => h == 1);

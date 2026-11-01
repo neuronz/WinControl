@@ -27,7 +27,9 @@ public sealed class ProcessWindowEnumerator
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public IReadOnlyList<WindowInfo> EnumerateMatching(IReadOnlyCollection<string> executableNames)
+    public IReadOnlyList<WindowInfo> EnumerateMatching(
+        IReadOnlyCollection<string> executableNames,
+        bool userFacingOnly = true)
     {
         var result = new List<WindowInfo>();
 
@@ -41,13 +43,16 @@ public sealed class ProcessWindowEnumerator
 
             try
             {
-                var isVisible = _windowApi.IsWindowVisible(window.Handle);
-                var isToolWindow = _windowApi.HasToolWindowStyle(window.Handle);
-                var isCloaked = _windowApi.IsCloaked(window.Handle);
-
-                if (!WindowEligibility.IsUserFacing(isVisible, isToolWindow, isCloaked))
+                if (userFacingOnly)
                 {
-                    continue;
+                    var isVisible = _windowApi.IsWindowVisible(window.Handle);
+                    var isToolWindow = _windowApi.HasToolWindowStyle(window.Handle);
+                    var isCloaked = _windowApi.IsCloaked(window.Handle);
+
+                    if (!WindowEligibility.IsUserFacing(isVisible, isToolWindow, isCloaked))
+                    {
+                        continue;
+                    }
                 }
 
                 var processName = _processNameResolver.GetProcessName(window.ProcessId);

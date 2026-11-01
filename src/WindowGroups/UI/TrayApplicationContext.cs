@@ -120,7 +120,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             }
             else
             {
-                _windowManager.RestoreAll();
+                _windowManager.RestoreAll(_configuration.Groups);
             }
         }
         catch (Exception ex)

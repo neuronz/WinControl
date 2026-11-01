@@ -5,17 +5,16 @@ using WindowGroups.Core.Models;
 namespace WindowGroups.Core.Services;
 
 /// <summary>
-/// Minimises and restores groups of windows. Keeps an in-memory record of the
-/// windows it has minimised so that restoring only affects windows previously
-/// minimised by this application.
+/// Minimises and restores groups of windows. Minimisation targets visible,
+/// user-facing windows; restoring returns every currently minimised window that
+/// matches the configured executable names (regardless of whether this
+/// application minimised it), so nothing is left hidden.
 /// </summary>
 public sealed class WindowManager
 {
     private readonly IWindowApi _windowApi;
     private readonly ProcessWindowEnumerator _enumerator;
     private readonly ILogger _logger;
-    private readonly Dictionary<string, HashSet<nint>> _minimized = new(StringComparer.Ordinal);
-    private readonly object _sync = new();
 
     public WindowManager(IWindowApi windowApi, ProcessWindowEnumerator enumerator, ILogger logger)
     {
@@ -41,12 +40,7 @@ public sealed class WindowManager
                 }
 
                 _windowApi.Minimize(window.Handle);
-
-                if (_windowApi.IsIconic(window.Handle))
-                {
-                    Track(group.Id, window.Handle);
-                    minimized++;
-                }
+                minimized++;
             }
             catch (Exception ex)
             {
@@ -57,7 +51,6 @@ public sealed class WindowManager
         return new MinimizeResult(group.Id, minimized);
     }
 
-    /// <summary>Minimises the union of all enabled groups, recording handles per group.</summary>
     public MinimizeResult MinimizeAll(IReadOnlyCollection<ApplicationGroup> groups)
     {
         if (groups is null) throw new ArgumentNullException(nameof(groups));
@@ -81,89 +74,54 @@ public sealed class WindowManager
         if (group is null) throw new ArgumentNullException(nameof(group));
         if (!group.Enabled) return new RestoreResult(group.Id, 0);
 
-        return new RestoreResult(group.Id, RestoreHandles(group.Id));
+        return new RestoreResult(group.Id, RestoreMatches(group.ExecutableNames));
     }
 
-    /// <summary>Restores every window previously minimised by this application.</summary>
-    public RestoreResult RestoreAll()
+    public RestoreResult RestoreAll(IReadOnlyCollection<ApplicationGroup> groups)
     {
-        string[] groupIds;
-        lock (_sync)
+        if (groups is null) throw new ArgumentNullException(nameof(groups));
+
+        var executableNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var group in groups)
         {
-            groupIds = _minimized.Keys.ToArray();
+            if (group is null) continue;
+
+            foreach (var name in group.ExecutableNames)
+            {
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    executableNames.Add(name);
+                }
+            }
         }
 
-        var total = 0;
-        foreach (var groupId in groupIds)
-        {
-            total += RestoreHandles(groupId);
-        }
-
-        return new RestoreResult(string.Empty, total);
+        return new RestoreResult(string.Empty, RestoreMatches(executableNames));
     }
 
-    private int RestoreHandles(string groupId)
+    private int RestoreMatches(IReadOnlyCollection<string> executableNames)
     {
         var restored = 0;
 
-        lock (_sync)
+        // Enumerate without the user-facing filters so minimised windows on other
+        // virtual desktops (DWM-cloaked) are restored as well.
+        foreach (var window in _enumerator.EnumerateMatching(executableNames, userFacingOnly: false))
         {
-            if (!_minimized.TryGetValue(groupId, out var handles))
+            try
             {
-                return restored;
-            }
-
-            foreach (var handle in handles.ToArray())
-            {
-                handles.Remove(handle);
-
-                try
+                if (!_windowApi.IsWindow(window.Handle) || !_windowApi.IsIconic(window.Handle))
                 {
-                    if (!_windowApi.IsWindow(handle))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    _windowApi.Restore(handle);
-                    restored++;
-                }
-                catch (Exception ex)
-                {
-                    _logger.Debug($"Failed to restore window handle 0x{handle:X}: {ex.Message}");
-                }
+                _windowApi.Restore(window.Handle);
+                restored++;
             }
-
-            if (handles.Count == 0)
+            catch (Exception ex)
             {
-                _minimized.Remove(groupId);
+                _logger.Debug($"Failed to restore window 0x{window.Handle:X}: {ex.Message}");
             }
         }
 
         return restored;
-    }
-
-    /// <summary>Snapshot of the handles recorded as minimised for a group. Primarily for testing.</summary>
-    public IReadOnlyCollection<nint> GetMinimizedHandles(string groupId)
-    {
-        lock (_sync)
-        {
-            return _minimized.TryGetValue(groupId, out var handles)
-                ? handles.ToArray()
-                : Array.Empty<nint>();
-        }
-    }
-
-    private void Track(string groupId, nint handle)
-    {
-        lock (_sync)
-        {
-            if (!_minimized.TryGetValue(groupId, out var handles))
-            {
-                handles = new HashSet<nint>();
-                _minimized[groupId] = handles;
-            }
-
-            handles.Add(handle);
-        }
     }
 }

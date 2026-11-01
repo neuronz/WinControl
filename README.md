@@ -16,12 +16,13 @@ windows) with one click or a global keyboard shortcut.
 - Built-in groups:
   - **Browsers** — `chrome`, `msedge`, `firefox`, `brave`
   - **Consoles / Terminals** — `WindowsTerminal`, `cmd`, `powershell`, `pwsh`
+  - **Microsoft Word** — `WINWORD`
 - Create, edit, enable/disable and delete your own groups.
 - Configurable global hotkeys (defaults: `Ctrl+Alt+B` = minimise Browsers,
   `Ctrl+Alt+C` = minimise Consoles / Terminals).
 - Optional "Start with Windows".
 - JSON configuration under `%LOCALAPPDATA%\WindowGroups\`.
-- Restoring only affects windows actually minimised by Window Groups.
+- Restoring returns every currently minimised window that matches a group.
 - Single instance: launching it again while it is already running simply opens
   the running instance's Settings window.
 - Taskbar jump list: right-clicking the pinned taskbar icon gives quick access to
@@ -202,9 +203,10 @@ scripts/
   pipeline lives in `WindowGroups.Core` (a plain class library) behind the
   `IWindowApi` and `IProcessNameResolver` abstractions, so it can be tested
   without a desktop and reused later.
-- Restoring tracks only windows minimised by the application (per group), and
-  validates window handles (`IsWindow`) before restoring so dead handles are
-  skipped safely.
+- Restoring enumerates each group's matching windows and returns every currently
+  minimised one to visible (including windows minimised by other apps or a
+  previous session, and windows on other virtual desktops), skipping destroyed
+  handles safely. Minimising still targets only visible, user-facing windows.
 - Windows are filtered to user-facing windows: invisible, tool
   (`WS_EX_TOOLWINDOW`) and DWM-cloaked windows are ignored; the application never
   acts on its own process.
