@@ -44,7 +44,7 @@ public sealed class SettingsForm : Form
     {
         _groups = configuration.Groups.Select(g => g.Clone()).ToList();
 
-        Text = "Window Groups Settings";
+        Text = $"Window Groups Settings v{AppVersion.Current}";
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;

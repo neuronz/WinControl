@@ -45,7 +45,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon = new NotifyIcon
         {
             Icon = _icon,
-            Text = "Window Groups",
+            Text = $"Window Groups v{AppVersion.Current}",
             Visible = true
         };
         _notifyIcon.DoubleClick += (_, _) => ShowSettings();

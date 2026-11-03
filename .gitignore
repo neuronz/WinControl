@@ -12,3 +12,6 @@ obj/
 # IDE
 .vs/
 .idea/
+
+# Release packaging
+release/

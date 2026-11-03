@@ -11,7 +11,12 @@ namespace WindowGroups.UI;
 /// </summary>
 internal static class TaskbarService
 {
-    public const string AppUserModelId = "WindowGroups.App";
+    /// <summary>
+    /// Unique identifier for taskbar grouping and the jump list. Change this to a
+    /// domain/username you control (or your GitHub account) if you prefer; note
+    /// that doing so means re-pinning the taskbar icon once.
+    /// </summary>
+    public const string AppUserModelId = "BruceBayley.WindowGroups";
 
     [DllImport("shell32.dll")]
     private static extern int SetCurrentProcessExplicitAppUserModelID([MarshalAs(UnmanagedType.LPWStr)] string appId);
