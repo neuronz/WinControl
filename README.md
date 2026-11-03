@@ -226,7 +226,11 @@ restore behaviour, invalid window handles, and hotkey registration/conflicts.
 
 ## Screenshots
 
+### Tray menu
 ![Tray menu](assets/tray-menu.png)
+### Settings
 ![Settings](assets/settings.png)
+### Jump List
 ![Jump List](assets/jump-list.png)
+### Icon
 ![Icon](app_icon_preview.png)
