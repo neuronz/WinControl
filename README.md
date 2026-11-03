@@ -223,3 +223,10 @@ dotnet test WindowGroups.sln
 Covered areas include configuration save/load and recovery, group creation and
 cloning, executable-name matching, window enumeration and filtering, minimise and
 restore behaviour, invalid window handles, and hotkey registration/conflicts.
+
+## Screenshots
+
+![Tray menu](assets/tray-menu.png)
+![Settings](assets/settings.png)
+![Jump List](assets/jump-list.png)
+![Icon](app_icon_preview.png)
