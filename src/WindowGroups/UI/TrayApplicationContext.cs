@@ -77,12 +77,19 @@ public sealed class TrayApplicationContext : ApplicationContext
             BuildGroupSubmenu("Restore Groups", minimize: false),
             new ToolStripSeparator(),
             new ToolStripMenuItem("Settings", null, (_, _) => ShowSettings()),
+            new ToolStripMenuItem("About", null, (_, _) => ShowAbout()),
             new ToolStripMenuItem("Exit", null, (_, _) => ExitThread())
         });
 
         var previous = _notifyIcon.ContextMenuStrip;
         _notifyIcon.ContextMenuStrip = menu;
         previous?.Dispose();
+    }
+
+    private void ShowAbout()
+    {
+        using var form = new AboutForm();
+        form.ShowDialog();
     }
 
     private ToolStripMenuItem BuildGroupSubmenu(string title, bool minimize)
